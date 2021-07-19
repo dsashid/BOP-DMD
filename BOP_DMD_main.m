@@ -123,7 +123,7 @@ for j = 1:num_cycles
         %selected index times
         ts_ind = ts(ind);
 
-        [w_cycle,e1_cycle,b_cycle] = optdmd(xdata_cycle,ts_ind,3,1,varpro_opts('ifprint',0),[],w_opt);
+        [w_cycle,e1_cycle,b_cycle] = optdmd(xdata_cycle,ts_ind,3,1,varpro_opts('ifprint',0),e_opt);
         lambda_vec_ensembleDMD(:,j) = e1_cycle;
 end
 
