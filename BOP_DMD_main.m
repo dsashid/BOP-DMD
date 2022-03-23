@@ -66,8 +66,6 @@ xclean = f1'*exp(e_1*ts) + f2'*exp(e_2*ts) + f3'*exp(e_3*ts);
 
 %% try bootstrapping - need to decide with or without replacement
 %set seed
-% rng(2);
-% rng(6);
 rng(7);
 
 
@@ -75,13 +73,13 @@ rng(7);
 n = length(ts);
 
 %number you want to choose
-p = 40;
+p = 50;
 
 %number of noise cycles
 num_Noisecycles = 1;
 
 %number of cycles for each noise cycle
-num_cycles =  1000;
+num_cycles =  100;
 
 
 %create lambda vec for DMD cycles
@@ -97,8 +95,9 @@ lambda_vec_mean_ensembleDMD = zeros(3,num_Noisecycles);
 
 for k = 1: num_Noisecycles
 
-%create data for noise cycle, .005
-sigma = .01;
+%create data for noise cycle
+
+sigma = .05;
 xdata = xclean + sigma*randn(size(xclean));
 
 %create lambda vec for ensembleDMD cycle
@@ -147,28 +146,9 @@ lambda_vec_optDMD(:,k) = e_opt;
 %make dist for DMD
 sortedLambda_DMD = sort(lambda_vec_DMD,1,'ComparisonMethod','real');
 
-% figure(1)
-% histfit(abs(sortedLambda_DMD(1,:)),40);
-% title('DMD eigenvalue 1')
-% figure(2)
-% histogram(abs(sortedLambda_DMD(2,:)),40);
-% title('DMD eigenvalue 2')
-% figure(3)
-% histogram(abs(sortedLambda_DMD(3,:)),40);
-% title('DMD eigenvalue 3')
-
 %make dist for DMD
 sortedLambda_optDMD = sort(lambda_vec_optDMD,1,'ComparisonMethod','real');
 
-% figure(4)
-% histfit(abs(sortedLambda_optDMD(1,:)),40);
-% title('optDMD eigenvalue 1')
-% figure(5)
-%  histogram(abs(sortedLambda_optDMD(2,:)),40);
-% title('optDMD eigenvalue 2')
-% figure(6)
-% histogram(abs(sortedLambda_optDMD(3,:)),40);
-% title('optDMD eigenvalue 3')
 
 
 %make dist for DMD
@@ -205,7 +185,7 @@ ax.FontSize = 20;
 
 
 figure(9)
-histfit(abs(sortedLambda_ensembleDMD(3,:)),40);
+histfit(real(sortedLambda_ensembleDMD(3,:)),40);
 hold on;
 opt = xline(abs(sortedLambda_optDMD(3,k)),'k:','linewidth', 4);
 hold on ; 
