@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% load data
-addpath('/Users/nathankutz/Dropbox (uwamath)/boostedDMD/optdmd-master');
+
 load('ALL.mat');
 
 
@@ -16,16 +16,6 @@ load('ALL.mat');
 
 %data 
 xdata = VORTALL;
-[mnoise,nnoise]=size(xdata);
-xdata=xdata+1*randn(mnoise,nnoise);   % JNK added noise
-
-xdata_fullset = xdata; 
-
-%make training cutoff
-training_cutoff = 100;
-
-xdata_test = xdata(:,training_cutoff+1:end);
-xdata = xdata(:,1:training_cutoff);
 
 % %add noise - run noisetofluids.m
 % noise_matrix = added_noise.*ones(89351,151);
@@ -34,6 +24,11 @@ xdata = xdata(:,1:training_cutoff);
 %EDIT: 6/29 removed standardization
 % standardize
 % xdata= (xdata-mean(xdata,1).*ones(89351,1))./std(xdata,0,1);
+
+training_cutoff = 100;
+
+xdata_test = xdata(:,training_cutoff+1:end);
+xdata = xdata(:,1:training_cutoff);
 
 
 %number of time points
@@ -65,8 +60,7 @@ w_vec_ensembleDMD = zeros(m_space,num_cycles*num_modes);
 b_vec_ensembleDMD = zeros(num_modes,num_cycles);
 
 
-%run exact DMD
-[phi_DMD, lam_DMD, b_DMD, sig_DMD]= DMD(xdata(:,1:end-1), xdata(:,2:end), num_modes);
+
 
 %try regular optdmd: for initial seed
 [w_opt,e_opt,b_opt] = optdmd(xdata,ts,num_modes,2, varpro_opts('ifprint',0));
@@ -122,13 +116,13 @@ for i =1:num_modes
     yticks([])
 
     %plot var of each mode 
-    figure(i+10);pcolor(reshape(abs(var(w_sample,0,2)),m,n));shading interp; 
-    c = colorbar;
-    c.FontSize = 16;
-    c.TickLabelInterpreter  = 'latex';
-    xticks([])
-    yticks([])
-    
+%     figure(i+10);pcolor(reshape(abs(var(w_sample,0,2)),m,n));shading interp; 
+%     c = colorbar;
+%     c.FontSize = 16;
+%     c.TickLabelInterpreter  = 'latex';
+%     xticks([])
+%     yticks([])
+%     
 end
 
 
@@ -150,15 +144,15 @@ end
 
 for jj = 1:num_modes
     %make b_i distributions
-    figure(jj);
-    hist(b_vec_ensembleDMD(jj,:))
+%     figure(jj);
+%     hist(b_vec_ensembleDMD(jj,:))
     pd_b = fitdist(b_vec_ensembleDMD(jj,:)','Normal');
     pdf_b_vec(1,jj) = pd_b.mu;
     pdf_b_vec(2,jj) = pd_b. sigma;
    
     %make lambda distributions for real component
     figure(jj+10);
-    hist(abs(imag(lambda_vec_ensembleDMD(jj,:))))
+    histfit(abs((lambda_vec_ensembleDMD(jj,:))),20)
     pd_real = fitdist(real(lambda_vec_ensembleDMD(jj,:)'),'Normal');
     pdf_lambda_vec_real(1,jj) = pd_real.mu;
     pdf_lambda_vec_real(2,jj) = pd_real. sigma;
@@ -240,33 +234,17 @@ end
 
 
 figure(40)
-subplot(3,1,1)
+plot(1:100, mean(x_train,1),'Linewidth',2);
+hold on;
 
-plot(1:151,mean(xdata_fullset,1),'k','Linewidth',1); hold on
-plot(1:100, mean(x_train,1),'r','Linewidth',1);
+plot(1:100,mean(xdata,1),'Linewidth',2);
 
-plot(99:151,mean(forecasted_sample,1),'m', 'Linewidth',1);
+plot(99:151,forecasted_sample,'k', 'Linewidth',2);
+hold on;
+plot(99:151,max(real(forecasted_sample), [],1),'r','Linewidth',2);
+plot(99:151,min(real(forecasted_sample), [],1),'b','Linewidth',2);
 
-forecast_average=mean(forecasted_sample,1);
-%for jjj=1:53
-%  variability(:,jjj)=var(forecasted_sample(:,jjj))
-%end
-
-%plot(99:151,mean(forecasted_sample,1)+variability,'g', 'Linewidth',2);
-%plot(99:151,mean(forecasted_sample,1)-variability,'g', 'Linewidth',2);
-
-
-%hold on;
-%plot(99:151,max(real(forecasted_sample), [],1),'r','Linewidth',2);
-%plot(99:151,min(real(forecasted_sample), [],1),'m','Linewidth',2);
-
-%legend('subset',[1 2 3],'Data','Reconstruction','Forecast','Location','SouthWest')
-set(gca,'Xlim',[0 145],'Ylim',[-0.05 0.05])
-xlabel('time'), ylabel('amplitude')
-
-
-
-
+%%
 
 figure(31);
 lastpredicted_snapshot = zeros(m_space,length(lambda_sample));
@@ -279,68 +257,20 @@ hold on ;
 plot(101:151,mean(forecasted_sample,1));
 
 lastpredicted_snapshot(:,jj) = forecasted_sample(:,end);
-
-course(jj,:)=mean(forecasted_sample,1);
-variability2(jj,:)=mean(forecasted_sample,1);
 end 
 
-%plot(101:151,mean(xdata(:,101:151),1),'Linewidth',2);
-
-
-
-for jjj=1:51
- varrr(jjj)=var(variability2(jjj,:));
- upper(jjj)=real(max(course(jjj,:)));
- lower(jjj)=real(min(course(jjj,:)));
-end
-figure(40)
-
-
-%plot(99:149,forecast_average(1:51)+varrr,'g')
-%plot(99:149,forecast_average(1:51)-varrr,'g')
-
-%plot(x,y1)
-%plot(x,y2)
-patch([99:149 fliplr(99:149)], [forecast_average(1:51)+(varrr.^1) fliplr(forecast_average(1:51)-(varrr.^1))],'c')
-%alpha(0.5)
-hold on
-plot(99:151,(forecast_average),'m', 'Linewidth',1);
-
-
-plot([99 99],[-0.05 0.05],'k:','Linewidth',2)
-
-%run reconstruction/forecasting for exact DMD
-deltat = 1;
-Lambda_continuous = diag(log(diag(lam_DMD))/deltat);
-
-for time = 1:150
-x_future_continuous(:,time) = phi_DMD* expm((Lambda_continuous)*time)*b_DMD;
-end
-
-
-print -djpeg forecast_flow.jpg
-
-
-
-
-%inBetween = [forecast_average(1:51)+varrr, forecast_average(1:51)-varrr];
-%fill(99,149, inBetween, 'g');
-
-%shade(99:149,forecast_average(1:51)+varrr,99:149,forecast_average(1:51)-varrr,'FillType',[1 2;2 1]);
-
+plot(101:151,mean(xdata(:,101:151),1),'Linewidth',2);
 
 
 %% plot mean, std, var of last predicted snapshot as well as actual last snapshot
 
 %plot last predicted snapshot mean
-figure(32); imagesc(imrotate(flipud(reshape(abs(mean(lastpredicted_snapshot,2)),m,n)),-0));
+figure(32); imagesc(imrotate(flipud(reshape(abs(mean(lastpredicted_snapshot,2)),m,n)),-90));
 c = colorbar;
 c.FontSize = 16;
 c.TickLabelInterpreter  = 'latex';
 xticks([])
 yticks([])
-caxis([0 16])
-colorbar off
 
 %plot last predicted snapshot std
 figure(33); imagesc(imrotate(flipud(reshape(std(abs(lastpredicted_snapshot),0,2),m,n)),-90));
@@ -350,22 +280,18 @@ c.TickLabelInterpreter  = 'latex';
 xticks([])
 yticks([])
 
-
 %plot last predicted snapshot var
-figure(34); imagesc(imrotate(flipud(100*reshape(var(abs(lastpredicted_snapshot),0,2),m,n)),-0));
+figure(34); imagesc(imrotate(flipud(reshape(var(abs(lastpredicted_snapshot),0,2),m,n)),-90));
 c = colorbar;
 c.FontSize = 16;
 c.TickLabelInterpreter  = 'latex';
 xticks([])
 yticks([])
-caxis([0 16])
 
 % plot actual snapshot
-figure(35); imagesc(imrotate(flipud(reshape(abs(xdata(:,end)),m,n)),-0));
+figure(35); imagesc(imrotate(flipud(reshape(abs(xdata(:,end)),m,n)),-90));
 c = colorbar;
 c.FontSize = 16;
 c.TickLabelInterpreter  = 'latex';
 xticks([])
 yticks([])
-caxis([0 16])
-colorbar off
