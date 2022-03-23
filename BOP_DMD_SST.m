@@ -13,7 +13,6 @@
 
 %% load data
 clear; clc;
-addpath('/Users/nathankutz/Dropbox (uwamath)/boostedDMD/optdmd-master');
 load('SST_data.mat');
 
 
@@ -30,13 +29,11 @@ ts = linspace(t0,t1,nt);
 %set seed
 % rng(0);
 
-%should I normalize? xdata-mean(xdata,1).*ones(89351,1);
 %data 
 xdata = Z;
 m = 360;
 n= 180;
 
-% xdata = (xdata-mean(xdata,1).*ones(89351,1))./std(xdata,0,1);
 training_cutoff = 1000;
 
 xdata_test = xdata(:,training_cutoff+1:end);
@@ -82,7 +79,6 @@ b_vec_ensembleDMD = zeros(num_modes,num_cycles);
 
 
 for j = 1:num_cycles
-        %try with ioptdmd with DMD modes/evals as IC
         %select indices
         unsorted_ind = randperm(n_time,p);
         %sort ind so in ascending order. NOTE: evals have variable delta t
@@ -90,26 +86,22 @@ for j = 1:num_cycles
 
         %create dataset for this cycle by taking aforementioned indices
         xdata_cycle = xdata(:,ind);
+        
         %selected index times
         ts_ind = ts(ind);
 
         [w_cycle,e1_cycle,b_cycle] = optdmd(xdata_cycle,ts_ind,num_modes,2,varpro_opts('ifprint',0),e_opt);
 
         
-%         [b_sort,b_ind]= sort(b_cycle,'descend');
 
-%sort by evals instead
+%sort by imag component of evals instead
         [sorted,imag_ind]=sort(imag(e1_cycle));
         
         b_vec_ensembleDMD(:,j) = b_cycle(imag_ind);
         lambda_vec_ensembleDMD(:,j) = e1_cycle(imag_ind);
         w_vec_ensembleDMD(:,(j-1)*num_modes+1:j*num_modes) = w_cycle(:,imag_ind);
    
-%         b_vec_ensembleDMD(:,j) = b_sort;
-%         w_vec_ensembleDMD(:,(j-1)*num_modes+1:j*num_modes) = w_cycle(:,b_ind);
-%         lambda_vec_ensembleDMD(:,j) = e1_cycle(b_ind);
-        
-        %do this!!
+
 
 
        
@@ -117,11 +109,6 @@ for j = 1:num_cycles
 end
 %%
 
-%break up lambda and sort?
-% [sorted_lambda,imag_ind] = sort(imag(lambda_vec_ensembleDMD),'ascend');
-% lambda_vec_ensembleDMD(imag_ind);
-% clip= sortedLambda_ensembleDMD(2:3,:);
-% clip(sign_ind);
 
 mean_modes = zeros(m_space,num_modes);
 
@@ -171,15 +158,15 @@ pdf_b_vec = zeros(2,num_modes);
 
 for jj = 1:num_modes
     %make b_i distributions
-    figure(jj);
-    hist(b_vec_ensembleDMD(jj,:))
+%     figure(jj);
+%     hist(b_vec_ensembleDMD(jj,:))
     pd_b = fitdist(b_vec_ensembleDMD(jj,:)','Normal');
     pdf_b_vec(1,jj) = pd_b.mu;
     pdf_b_vec(2,jj) = pd_b. sigma;
    
     %make lambda distributions
     figure(jj+10);
-    histfit(abs((lambda_vec_ensembleDMD(jj,:))))
+    histfit(abs((lambda_vec_ensembleDMD(jj,:))),20)
     pd_real = fitdist(real(lambda_vec_ensembleDMD(jj,:)'),'Normal');
     pdf_lambda_vec_real(1,jj) = pd_real.mu;
     pdf_lambda_vec_real(2,jj) = pd_real. sigma;
@@ -194,7 +181,6 @@ end
 
 
 %test with optdmd
-% mean(w_opt*diag(b_opt)*exp(e_opt*(1:1400)),1);
 
 mean_b = mean(b_vec_ensembleDMD,2);
 
@@ -272,28 +258,14 @@ c.FontSize = 16;
 c.TickLabelInterpreter  = 'latex';
 xticks([])
 yticks([])
-caxis([0 30])
-colorbar off
 
-figure(33); imagesc(imrotate(flipud(20*reshape(std(abs(lastpredicted_snapshot),0,2),m,n)),-90));
+
+figure(33); imagesc(imrotate(flipud(reshape(std(abs(lastpredicted_snapshot),0,2),m,n)),-90));
 c = colorbar;
 c.FontSize = 16;
 c.TickLabelInterpreter  = 'latex';
 xticks([])
 yticks([])
-caxis([0 30])
-%colorbar off
-
-%%
-% plot actual snapshot
-figure(35); imagesc(imrotate(flipud(reshape(abs(xdata(:,end)),m,n)),-90));
-c = colorbar;
-c.FontSize = 16;
-c.TickLabelInterpreter  = 'latex';
-xticks([])
-yticks([])
-caxis([0 30])
-colorbar off
 
 
 %try doing exact DMD last snapshot
@@ -314,28 +286,5 @@ c.FontSize = 16;
 c.TickLabelInterpreter  = 'latex';
 xticks([])
 yticks([])
-
-
-%try doing exact DMD last snapshot
-deltat = 1;
-Lambda_continuous = diag(log(diag(lam_DMD))/deltat);
-
-for time = 1:1400
-x_future_continuous(:,time) = phi_DMD* expm((Lambda_continuous)*time)*b_DMD;
-end
-
-figure(44);
-plot(1:1400, mean(x_future_continuous,1));
-
-
-figure(43); imagesc(imrotate(flipud(reshape(abs(x_future_continuous(:,end)),m,n)),-90));
-c = colorbar;
-caxis([0 30])
-c.FontSize = 16;
-c.TickLabelInterpreter  = 'latex';
-xticks([])
-yticks([])
-
-
 
 
